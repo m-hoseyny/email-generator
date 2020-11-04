@@ -1,0 +1,5 @@
+database
+mining
+Data Mangement
+Querying
+Query
