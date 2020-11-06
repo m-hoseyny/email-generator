@@ -68,7 +68,7 @@ def read_professors_csv():
 
 
 def save_professors_csv(df):
-    return df.to_csv('professors_list_result.csv'.format(datetime.datetime.now()))
+    return df.to_csv('professors_list.csv'.format(datetime.datetime.now()))
 
 
 def get_email_service(username, password):
@@ -102,15 +102,24 @@ def send_email(prof, server, my_email):
     message = attach_files(['Mohammad_Hosseini_Resume.pdf', 'Transcript.pdf'], prof['best_subject'], message)
     part = MIMEText(prof['Email Text'], "html")
     message.attach(part)
+    print('{} ({}) - {}: {}\n{}'.format(prof['Name'], message["To"], message["Subject"], prof['best_subject'], prof['Email Text']))
+    if input('Send Email> [Y/n]').lower() == 'n':
+        print('Skip')
+        return
     server.sendmail(
         my_email, receiver_email, message.as_string()
     )
     print('Email Sent to: {} ({})'.format(prof['Name'], receiver_email))
 
-def send_emails(df, server, my_email):
+def send_emails(df, server, my_email, limit=None):
     print("Sending Emails")
     for i, prof in df.iterrows():
+        if limit and limit <= i:
+            break
         try:
+            if str(prof[COLUMNS['Send Email']]).lower() == 'true':
+                print('Skip {} ({}): {}'.format(prof['Name'], prof['Email'], 'Sent Before' ) )
+                continue
             send_email(prof, server, my_email)
             df.loc[i, COLUMNS['Send Email']] = 'True'
             save_professors_csv(df)
@@ -123,10 +132,10 @@ def send_emails(df, server, my_email):
 def skip_policy(prof):
     if not prof[COLUMNS['Subjects of Interest']] or prof[COLUMNS['Subjects of Interest']] == 'nan' or not type(prof[COLUMNS['Subjects of Interest']]) is str:
         return 'EmptyInterest'
-    if str(prof[COLUMNS['Send Email']]) == 'True':
+    if str(prof[COLUMNS['Send Email']]).lower() == 'true':
         return 'SentBefore'
     if type(prof['Email Text']) is not int and (len(str(prof['Email Text'])) > 10):
-        return 'EmailTextEmpty'
+        return 'EmailTextNotEmpty'
     return None
 
 
@@ -161,7 +170,7 @@ def main():
         return
     save_professors_csv(result)
     server = get_email_service(username, password)
-    send_emails(result[:1], server, username)
+    send_emails(result, server, username, limit=None)
 
 
 
