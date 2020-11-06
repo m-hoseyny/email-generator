@@ -108,10 +108,16 @@ def send_email(prof, server, my_email):
     print('Email Sent to: {} ({})'.format(prof['Name'], receiver_email))
 
 def send_emails(df, server, my_email):
+    print("Sending Emails")
     for i, prof in df.iterrows():
-        send_email(prof, server, my_email)
-        time.sleep(5)
-
+        try:
+            send_email(prof, server, my_email)
+            df.loc[i, COLUMNS['Send Email']] = 'True'
+            save_professors_csv(df)
+            time.sleep(5)
+        except Exception as e:
+            print('Error')
+            print(e)
 
 
 def skip_policy(prof):
@@ -150,6 +156,9 @@ def main():
     subject_materials = get_subject_materials(subjects)
     professors = read_professors_csv()
     result = analyze_professors(professors, subject_materials)
+    if input('Do you wand to continue...[Y/n]').lower() == 'n':
+        print('Exiting')
+        return
     save_professors_csv(result)
     server = get_email_service(username, password)
     send_emails(result[:1], server, username)
